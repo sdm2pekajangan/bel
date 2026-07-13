@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bel Sekolah Otomatis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#161B22;
+    --panel:#1F2733;
+    --panel-raised:#26303F;
+    --brass:#C9A227;
+    --brass-bright:#E3BE5D;
+    --led-green:#5FD98A;
+    --led-red-dim:#8A4B44;
+    --text-primary:#F2EFE6;
+    --text-muted:#93A0B4;
+    --danger:#A6483A;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    min-height:100vh;
+    background-color:var(--bg-deep);
+    background-image:radial-gradient(circle, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size:22px 22px;
+    font-family:'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    color:var(--text-primary);
+  }
+  *:focus-visible{ outline:2px solid var(--brass); outline-offset:2px; }
+
+  .panel{
+    background:linear-gradient(180deg, var(--panel), #1a2029);
+    border-radius:22px;
+    border:1px solid rgba(201,162,39,0.25);
+    box-shadow:0 20px 60px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04);
+    padding:2.2rem 2rem 2.4rem;
+    max-width:640px;
+    margin:3rem auto;
+  }
+
+  .panel-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.6rem; }
+  .brand{ display:flex; align-items:center; gap:0.7rem; }
+  .bell-icon{ font-size:1.8rem; display:inline-block; transform-origin:top center; }
+  @keyframes bellRing{
+    0%,100%{ transform:rotate(0deg); }
+    10%{ transform:rotate(-18deg); }
+    20%{ transform:rotate(14deg); }
+    30%{ transform:rotate(-10deg); }
+    40%{ transform:rotate(8deg); }
+    50%{ transform:rotate(-6deg); }
+    60%{ transform:rotate(4deg); }
+    70%{ transform:rotate(-2deg); }
+    80%,100%{ transform:rotate(0deg); }
+  }
+  .bell-icon.ringing{ animation:bellRing 0.9s ease-in-out 3; }
+
+  h1{ font-size:1.5rem; letter-spacing:0.02em; margin:0; color:var(--text-primary); line-height:1.15; }
+  h1 span{ display:block; font-size:0.7rem; letter-spacing:0.35em; color:var(--brass); font-weight:600; margin-top:3px; }
+
+  .led-status{ display:flex; align-items:center; gap:0.4rem; font-size:0.72rem; letter-spacing:0.12em; color:var(--text-muted); margin-top:0.4rem; }
+  .led-dot{ width:9px; height:9px; border-radius:50%; background:var(--led-red-dim); color:var(--led-red-dim); animation:ledPulse 2s ease-in-out infinite; }
+  .led-status.on{ color:var(--led-green); }
+  .led-status.on .led-dot{ background:var(--led-green); color:var(--led-green); }
+  @keyframes ledPulse{ 0%,100%{ box-shadow:0 0 4px 1px currentColor; } 50%{ box-shadow:0 0 10px 3px currentColor; } }
+
+  .clock-block{ text-align:center; margin:0.6rem 0 0.2rem; }
+  .clock{
+    font-family:'JetBrains Mono', ui-monospace, monospace;
+    font-size:clamp(2.6rem, 9vw, 4.2rem);
+    font-weight:700;
+    letter-spacing:0.02em;
+    text-shadow:0 0 18px rgba(201,162,39,0.25);
+  }
+  .colon{ color:var(--brass); animation:blink 1s steps(1) infinite; }
+  @keyframes blink{ 50%{ opacity:0.15; } }
+  .date{ color:var(--text-muted); font-size:0.95rem; margin-top:0.2rem; text-transform:capitalize; }
+
+  .next-bell{
+    margin:1.4rem 0;
+    padding:0.85rem 1.1rem;
+    background:rgba(201,162,39,0.08);
+    border-left:3px solid var(--brass);
+    border-radius:8px;
+    font-size:0.92rem;
+  }
+  .next-bell strong{ color:var(--brass); }
+
+  .controls{ display:flex; gap:0.8rem; flex-wrap:wrap; margin-bottom:1.8rem; }
+
+  .switch{
+    display:flex; align-items:center; gap:0.75rem;
+    background:var(--panel-raised);
+    border:1px solid rgba(255,255,255,0.08);
+    padding:0.55rem 1.1rem 0.55rem 0.6rem;
+    border-radius:999px;
+    cursor:pointer;
+    color:var(--text-primary);
+    font-family:inherit;
+    font-size:0.9rem;
+    font-weight:600;
+  }
+  .switch-track{ width:50px; height:26px; border-radius:999px; background:#3a2e2b; position:relative; flex-shrink:0; transition:background .25s ease; }
+  .switch.on .switch-track{ background:#234d3a; }
+  .switch-knob{ position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:var(--led-red-dim); transition:left .25s ease, background .25s ease; box-shadow:0 1px 2px rgba(0,0,0,.4); }
+  .switch.on .switch-knob{ left:27px; background:var(--led-green); }
+
+  .btn-test{
+    background:var(--panel-raised);
+    border:1px solid rgba(255,255,255,0.08);
+    color:var(--text-primary);
+    padding:0.65rem 1.15rem;
+    border-radius:999px;
+    font-family:inherit;
+    font-weight:600;
+    font-size:0.9rem;
+    cursor:pointer;
+    transition:transform .15s ease, background .2s ease;
+  }
+  .btn-test:hover{ background:#2f3a4b; transform:translateY(-1px); }
+  .btn-test:active{ transform:translateY(0); }
+
+  .schedule h2{
+    font-size:0.85rem; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--text-muted); margin:0 0 0.9rem;
+    border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:0.55rem;
+  }
+  .schedule-list{ margin-bottom:0.9rem; }
+  .schedule-row{
+    display:grid; grid-template-columns:64px 1fr auto; align-items:center; gap:0.7rem;
+    padding:0.65rem 0.7rem; background:var(--panel-raised); border-radius:10px;
+    margin-bottom:0.5rem; border:1px solid rgba(255,255,255,0.05);
+  }
+  .s-time{ font-family:'JetBrains Mono', ui-monospace, monospace; font-weight:700; color:var(--brass); font-size:1rem; }
+  .s-info{ min-width:0; }
+  .s-label{ display:block; color:var(--text-primary); font-size:0.95rem; }
+  .s-badges{ display:flex; gap:0.35rem; margin-top:0.25rem; flex-wrap:wrap; }
+  .badge{ font-size:0.66rem; padding:0.15rem 0.5rem; border-radius:999px; background:rgba(255,255,255,0.06); color:var(--text-muted); white-space:nowrap; }
+  .badge-announce{ background:rgba(201,162,39,0.18); color:var(--brass); }
+  .s-actions{ display:flex; gap:0.4rem; flex-shrink:0; }
+  .s-play, .s-delete{ width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:0.75rem; line-height:1; background:transparent; }
+  .s-play{ border:1px solid rgba(95,217,138,0.4); color:#8fe0ae; }
+  .s-play:hover{ background:rgba(95,217,138,0.18); }
+  .s-delete{ border:1px solid rgba(166,72,58,0.5); color:#d98d7d; }
+  .s-delete:hover{ background:rgba(166,72,58,0.25); }
+  .empty{ color:var(--text-muted); font-size:0.9rem; padding:0.6rem 0; }
+
+  .add-form{ display:flex; flex-direction:column; }
+  .add-row-main{ display:grid; grid-template-columns:auto 1fr auto; gap:0.6rem; }
+  input[type=time], input[type=text], select{
+    background:#141922; border:1px solid rgba(255,255,255,0.1); color:var(--text-primary);
+    padding:0.6rem 0.7rem; border-radius:8px; font-family:inherit; font-size:0.9rem;
+  }
+  .add-row-main button{
+    background:var(--brass); color:#1a1305; font-weight:700; border:none;
+    border-radius:8px; padding:0.6rem 1.1rem; cursor:pointer; font-family:inherit; font-size:0.9rem;
+    white-space:nowrap;
+  }
+  .add-row-main button:hover{ background:var(--brass-bright); }
+
+  .advanced-toggle{
+    background:none; border:none; color:var(--brass); font-family:inherit; font-size:0.82rem; font-weight:600;
+    cursor:pointer; padding:0.55rem 0.1rem; margin-top:0.2rem; text-align:left;
+  }
+  .advanced-toggle:hover{ color:var(--brass-bright); }
+  .advanced-panel{
+    display:flex; flex-direction:column; gap:0.65rem;
+    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+    border-radius:10px; padding:0.9rem; margin-top:0.3rem;
+  }
+  .advanced-panel label{ display:flex; flex-direction:column; gap:0.35rem; font-size:0.82rem; color:var(--text-muted); }
+  .checkbox-row{ flex-direction:row !important; align-items:center; gap:0.5rem !important; font-size:0.88rem !important; color:var(--text-primary) !important; }
+  .checkbox-row input{ width:16px; height:16px; accent-color:var(--brass); }
+  .advanced-note{ font-size:0.72rem; color:var(--text-muted); line-height:1.5; margin:0; }
+
+  .hint{ margin-top:1.8rem; font-size:0.78rem; color:var(--text-muted); line-height:1.55; text-align:center; }
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px);
+    background:#20262f; border:1px solid rgba(201,162,39,0.4); color:var(--text-primary);
+    padding:0.7rem 1.2rem; border-radius:999px; font-size:0.9rem;
+    opacity:0; pointer-events:none; transition:all .3s ease; box-shadow:0 10px 30px rgba(0,0,0,0.4);
+    max-width:90vw;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media (max-width:480px){
+    .panel{ padding:1.5rem 1.15rem 1.8rem; margin:1.2rem; border-radius:16px; }
+    .add-row-main{ grid-template-columns:1fr; }
+    .schedule-row{ grid-template-columns:56px 1fr auto; }
+  }
+</style>
+</head>
+<body>
+  <div class="panel">
+    <div class="panel-head">
+      <div class="brand">
+        <span class="bell-icon" id="bellIcon">🔔</span>
+        <!-- Ganti nama sekolah di sini kalau mau -->
+        <div>
+          <h1>BEL SEKOLAH<span>OTOMATIS</span></h1>
+        </div>
+      </div>
+      <div class="led-status on" id="ledStatus">
+        <span class="led-dot"></span><span id="ledLabel">AKTIF</span>
+      </div>
+    </div>
+
+    <div class="clock-block">
+      <div class="clock" id="clockDisplay">00<span class="colon">:</span>00<span class="colon">:</span>00</div>
+      <div class="date" id="dateDisplay">-</div>
+    </div>
+
+    <div class="next-bell" id="nextBellInfo" aria-live="polite">Memuat jadwal…</div>
+
+    <div class="controls">
+      <button type="button" class="switch on" id="toggleSwitch" aria-pressed="true">
+        <span class="switch-track"><span class="switch-knob"></span></span>
+        <span id="switchText">Bel Otomatis: AKTIF</span>
+      </button>
+      <button type="button" class="btn-test" id="testBtn">🔊 Tes Bel</button>
+    </div>
+
+    <div class="schedule">
+      <h2>Jadwal Bel</h2>
+      <div class="schedule-list" id="scheduleList"></div>
+
+      <form class="add-form" id="addForm">
+        <div class="add-row-main">
+          <input type="time" id="newTime" required aria-label="Jam bel">
+          <input type="text" id="newLabel" placeholder="Nama bel, misal: Bel Masuk" required maxlength="40" aria-label="Nama bel">
+          <button type="submit">+ Tambah</button>
+        </div>
+
+        <button type="button" class="advanced-toggle" id="advancedToggle">⚙️ Pengaturan suara (opsional)</button>
+        <div class="advanced-panel" id="advancedPanel" hidden>
+          <label>Gaya bel
+            <select id="newStyle">
+              <option value="standard">Standar — Ding-Dong x3</option>
+              <option value="short">Pendek — 1x Ding</option>
+              <option value="long">Panjang — Ding-Dong x5</option>
+              <option value="urgent">Mendesak — Beep cepat</option>
+            </select>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="newAnnounce">
+            Ucapkan pengumuman suara setelah bel berbunyi
+          </label>
+          <div id="newMessageWrap" hidden>
+            <input type="text" id="newMessage" placeholder="Contoh: Saatnya pelajaran pertama dimulai" maxlength="120" style="width:100%;">
+          </div>
+          <p class="advanced-note">Pengumuman suara memakai fitur text-to-speech bawaan browser. Kualitas dan dukungan Bahasa Indonesia tergantung sistem/browser yang dipakai — tekan ▶ pada jadwal untuk mendengarkan hasilnya dulu sebelum dipakai.</p>
+        </div>
+      </form>
+    </div>
+
+    <p class="hint">Klik salah satu tombol di atas satu kali saat pertama membuka halaman ini, supaya browser mengizinkan suara diputar otomatis nanti. Biarkan tab ini tetap terbuka di komputer yang tersambung ke speaker sepanjang hari sekolah.</p>
+  </div>
+
+  <div class="toast" id="toast" aria-live="polite"></div>
+
+<script>
+  // ---------- Data & konstanta ----------
+  const DEFAULT_SCHEDULE = [
+    { time:'07:00', label:'Bel Masuk', style:'standard', announce:true, message:'Selamat pagi, saatnya pelajaran pertama dimulai' },
+    { time:'09:30', label:'Istirahat 1', style:'standard', announce:false, message:'' },
+    { time:'09:45', label:'Masuk Kembali', style:'standard', announce:false, message:'' },
+    { time:'12:00', label:'Sholat Dzuhur & Istirahat 2', style:'long', announce:true, message:'Waktunya sholat Dzuhur dan istirahat' },
+    { time:'12:30', label:'Masuk Kembali', style:'standard', announce:false, message:'' },
+    { time:'13:30', label:'Bel Pulang', style:'long', announce:true, message:'Waktunya pulang, sampai jumpa besok' }
+  ];
+
+  const STORAGE_KEY = 'belSekolah_schedule_v2';
+  const ENABLED_KEY = 'belSekolah_enabled_v1';
+  const LASTRING_KEY = 'belSekolah_lastRing_v1';
+
+  const DAY_NAMES = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  const MONTH_NAMES = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+  const SOUND_STYLES = {
+    standard: 'Standar',
+    short: 'Pendek',
+    long: 'Panjang',
+    urgent: 'Mendesak'
+  };
+
+  // ---------- Util ----------
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function timeToMinutes(t){ const parts = t.split(':').map(Number); return parts[0]*60 + parts[1]; }
+  function escapeHTML(str){ const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+  function genId(){ return 'b_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+
+  function normalizeEntry(en){
+    return {
+      id: en.id || genId(),
+      time: en.time,
+      label: en.label,
+      style: (en.style && SOUND_STYLES[en.style]) ? en.style : 'standard',
+      announce: !!en.announce,
+      message: en.message || ''
+    };
+  }
+
+  function loadSchedule(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        if(Array.isArray(parsed) && parsed.length) return parsed.map(normalizeEntry);
+      }
+    }catch(e){}
+    return DEFAULT_SCHEDULE.map(normalizeEntry);
+  }
+  function saveSchedule(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(schedule)); }
+  function loadEnabled(){
+    const raw = localStorage.getItem(ENABLED_KEY);
+    return raw === null ? true : raw === 'true';
+  }
+  function saveEnabled(){ localStorage.setItem(ENABLED_KEY, String(enabled)); }
+
+  // ---------- State ----------
+  let schedule = loadSchedule();
+  let enabled = loadEnabled();
+  let lastRingKey = localStorage.getItem(LASTRING_KEY) || '';
+  let audioCtx = null;
+  let toastTimer = null;
+
+  // ---------- Audio ----------
+  function unlockAudio(){
+    if(!audioCtx){ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function playTone(startTime, freq, duration){
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.35, startTime + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.05);
+  }
+
+  function ringPattern(styleKey, onDone){
+    unlockAudio();
+    const start = audioCtx.currentTime;
+    let t = start;
+    if(styleKey === 'short'){
+      playTone(t, 880, 0.9);
+      t += 0.9;
+    } else if(styleKey === 'long'){
+      for(let i=0;i<5;i++){
+        playTone(t, 880, 0.75);
+        playTone(t + 0.75*0.6, 659.25, 0.75);
+        t += 0.75*1.6 + 0.2;
+      }
+    } else if(styleKey === 'urgent'){
+      for(let i=0;i<8;i++){
+        playTone(t, 1046.5, 0.16);
+        t += 0.2;
+      }
+    } else {
+      for(let i=0;i<3;i++){
+        playTone(t, 880, 0.85);
+        playTone(t + 0.85*0.6, 659.25, 0.85);
+        t += 0.85*1.6 + 0.25;
+      }
+    }
+    const totalMs = (t - start) * 1000;
+    animateBellIcon();
+    if(onDone) setTimeout(onDone, totalMs + 200);
+  }
+
+  function speak(text, onDone){
+    if(!('speechSynthesis' in window) || !text){
+      if(onDone) onDone();
+      return;
+    }
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'id-ID';
+    utter.rate = 0.95;
+    const voices = window.speechSynthesis.getVoices();
+    const idVoice = voices.find(v => v.lang && v.lang.toLowerCase().indexOf('id') === 0);
+    if(idVoice) utter.voice = idVoice;
+    utter.onend = () => { if(onDone) onDone(); };
+    utter.onerror = () => { if(onDone) onDone(); };
+    window.speechSynthesis.speak(utter);
+  }
+
+  function playEntry(entry, onDone){
+    unlockAudio();
+    ringPattern(entry.style || 'standard', () => {
+      if(entry.announce && entry.message && entry.message.trim()){
+        speak(entry.message.trim(), onDone);
+      } else if(onDone){
+        onDone();
+      }
+    });
+  }
+
+  function animateBellIcon(){
+    const icon = document.getElementById('bellIcon');
+    icon.classList.remove('ringing');
+    void icon.offsetWidth;
+    icon.classList.add('ringing');
+    setTimeout(()=> icon.classList.remove('ringing'), 4200);
+  }
+
+  // ---------- UI: toast ----------
+  function showToast(text){
+    const toast = document.getElementById('toast');
+    toast.textContent = text;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toast.classList.remove('show'), 4000);
+  }
+
+  // ---------- UI: daftar jadwal ----------
+  function renderScheduleList(){
+    const list = document.getElementById('scheduleList');
+    list.innerHTML = '';
+    const sorted = schedule.slice().sort((a,b)=> timeToMinutes(a.time)-timeToMinutes(b.time));
+    if(sorted.length === 0){
+      list.innerHTML = '<p class="empty">Belum ada jadwal. Tambahkan jam bel di bawah.</p>';
+      return;
+    }
+    sorted.forEach((entry) => {
+      const row = document.createElement('div');
+      row.className = 'schedule-row';
+      const badges =
+        '<span class="badge">' + (SOUND_STYLES[entry.style] || 'Standar') + '</span>' +
+        (entry.announce && entry.message ? '<span class="badge badge-announce">📢 Ada pengumuman</span>' : '');
+      row.innerHTML =
+        '<span class="s-time">' + entry.time + '</span>' +
+        '<div class="s-info"><span class="s-label">' + escapeHTML(entry.label) + '</span><div class="s-badges">' + badges + '</div></div>' +
+        '<div class="s-actions">' +
+          '<button type="button" class="s-play" data-id="' + entry.id + '" title="Coba bunyikan" aria-label="Coba bunyikan ' + escapeHTML(entry.label) + '">▶</button>' +
+          '<button type="button" class="s-delete" data-id="' + entry.id + '" title="Hapus" aria-label="Hapus jadwal ' + escapeHTML(entry.label) + '">✕</button>' +
+        '</div>';
+      list.appendChild(row);
+    });
+  }
+
+  document.getElementById('scheduleList').addEventListener('click', (e) => {
+    const delBtn = e.target.closest('.s-delete');
+    const playBtn = e.target.closest('.s-play');
+    if(delBtn){
+      const id = delBtn.dataset.id;
+      schedule = schedule.filter(en => en.id !== id);
+      saveSchedule();
+      renderScheduleList();
+      updateNextBell();
+      return;
+    }
+    if(playBtn){
+      const id = playBtn.dataset.id;
+      const entry = schedule.find(en => en.id === id);
+      if(entry) playEntry(entry, null);
+    }
+  });
+
+  // ---------- UI: form tambah ----------
+  const advancedToggle = document.getElementById('advancedToggle');
+  const advancedPanel = document.getElementById('advancedPanel');
+  advancedToggle.addEventListener('click', () => {
+    const isHidden = advancedPanel.hasAttribute('hidden');
+    if(isHidden){
+      advancedPanel.removeAttribute('hidden');
+      advancedToggle.textContent = '⚙️ Sembunyikan pengaturan suara';
+    } else {
+      advancedPanel.setAttribute('hidden', '');
+      advancedToggle.textContent = '⚙️ Pengaturan suara (opsional)';
+    }
+  });
+
+  const newAnnounce = document.getElementById('newAnnounce');
+  const newMessageWrap = document.getElementById('newMessageWrap');
+  newAnnounce.addEventListener('change', () => {
+    newMessageWrap.hidden = !newAnnounce.checked;
+  });
+
+  document.getElementById('addForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const timeInput = document.getElementById('newTime');
+    const labelInput = document.getElementById('newLabel');
+    const styleInput = document.getElementById('newStyle');
+    const announceInput = document.getElementById('newAnnounce');
+    const messageInput = document.getElementById('newMessage');
+
+    const time = timeInput.value;
+    const label = labelInput.value.trim();
+    if(!time || !label) return;
+
+    schedule.push({
+      id: genId(),
+      time: time,
+      label: label,
+      style: styleInput.value,
+      announce: announceInput.checked,
+      message: announceInput.checked ? messageInput.value.trim() : ''
+    });
+    saveSchedule();
+    renderScheduleList();
+    updateNextBell();
+
+    timeInput.value = '';
+    labelInput.value = '';
+    styleInput.value = 'standard';
+    announceInput.checked = false;
+    messageInput.value = '';
+    newMessageWrap.hidden = true;
+    labelInput.focus();
+  });
+
+  // ---------- UI: saklar & tombol tes ----------
+  const toggleSwitch = document.getElementById('toggleSwitch');
+  function updateSwitchUI(){
+    toggleSwitch.setAttribute('aria-pressed', String(enabled));
+    toggleSwitch.classList.toggle('on', enabled);
+    document.getElementById('switchText').textContent = 'Bel Otomatis: ' + (enabled ? 'AKTIF' : 'NONAKTIF');
+    const ledStatus = document.getElementById('ledStatus');
+    ledStatus.classList.toggle('on', enabled);
+    document.getElementById('ledLabel').textContent = enabled ? 'AKTIF' : 'NONAKTIF';
+  }
+  toggleSwitch.addEventListener('click', () => {
+    unlockAudio();
+    enabled = !enabled;
+    saveEnabled();
+    updateSwitchUI();
+  });
+
+  document.getElementById('testBtn').addEventListener('click', () => {
+    playEntry({ style:'standard', announce:false, message:'' }, null);
+    showToast('🔔 Tes bel dibunyikan');
+  });
+
+  // ---------- Jam & penjadwal ----------
+  function updateClock(){
+    const now = new Date();
+    const h = pad(now.getHours());
+    const m = pad(now.getMinutes());
+    const s = pad(now.getSeconds());
+    document.getElementById('clockDisplay').innerHTML = h + '<span class="colon">:</span>' + m + '<span class="colon">:</span>' + s;
+    document.getElementById('dateDisplay').textContent = DAY_NAMES[now.getDay()] + ', ' + now.getDate() + ' ' + MONTH_NAMES[now.getMonth()] + ' ' + now.getFullYear();
+    return now;
+  }
+
+  function updateNextBell(now){
+    now = now || new Date();
+    const nowMinutes = now.getHours()*60 + now.getMinutes();
+    const sorted = schedule.slice().sort((a,b)=> timeToMinutes(a.time)-timeToMinutes(b.time));
+    const info = document.getElementById('nextBellInfo');
+    if(sorted.length === 0){
+      info.textContent = 'Belum ada jadwal bel.';
+      return;
+    }
+    let next = sorted.find(en => timeToMinutes(en.time) > nowMinutes);
+    let isTomorrow = false;
+    if(!next){ next = sorted[0]; isTomorrow = true; }
+    const diff = isTomorrow
+      ? (24*60 - nowMinutes + timeToMinutes(next.time))
+      : (timeToMinutes(next.time) - nowMinutes);
+    const hrs = Math.floor(diff/60);
+    const mins = diff%60;
+    const durText = hrs > 0 ? (hrs + ' jam ' + mins + ' menit') : (mins + ' menit');
+    info.innerHTML = 'Bel berikutnya: <strong>' + next.time + ' — ' + escapeHTML(next.label) + '</strong>' + (isTomorrow ? ' (besok)' : '') + ' · sekitar ' + durText + ' lagi';
+  }
+
+  function playQueue(list){
+    if(!list.length) return;
+    const entry = list.shift();
+    playEntry(entry, () => playQueue(list));
+  }
+
+  function tick(){
+    const now = updateClock();
+    const hh = pad(now.getHours());
+    const mm = pad(now.getMinutes());
+    const currentTime = hh + ':' + mm;
+    const todayKey = now.toDateString();
+    if(enabled){
+      const matches = schedule.filter(en => en.time === currentTime);
+      if(matches.length){
+        const triggerKey = todayKey + '_' + currentTime;
+        if(lastRingKey !== triggerKey){
+          lastRingKey = triggerKey;
+          localStorage.setItem(LASTRING_KEY, lastRingKey);
+          playQueue(matches.slice());
+          showToast('🔔 ' + matches.map(m => m.label).join(', ') + ' sedang berbunyi');
+        }
+      }
+    }
+    updateNextBell(now);
+  }
+
+  // ---------- Mulai ----------
+  renderScheduleList();
+  updateSwitchUI();
+  updateClock();
+  updateNextBell();
+  setInterval(tick, 1000);
+
+  ['click','keydown'].forEach(evt => document.addEventListener(evt, unlockAudio, { once:true }));
+</script>
+</body>
+</html>
